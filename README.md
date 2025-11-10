@@ -1,34 +1,38 @@
-# reblessed
+# trueblessed
 
 #### If you'd like to request a feature, make a new issue
 
-![reblessed-npm](https://img.shields.io/static/v1?label=npm&message=reblessed%20on%20npm&color=orange&link=https://www.npmjs.com/package/reblessed)
-![reblessed-stars](https://img.shields.io/github/stars/kenan238/reblessed)
-![reblessed-forks](https://img.shields.io/github/forks/kenan238/reblessed)
-![reblessed-stars](https://img.shields.io/github/license/kenan238/reblessed)
-![reblessed-issues](https://img.shields.io/github/issues/kenan238/reblessed)
+![trueblessed-stars](https://img.shields.io/github/stars/lootmancerstudios/trueblessed)
+![trueblessed-forks](https://img.shields.io/github/forks/lootmancerstudios/trueblessed)
+![trueblessed-license](https://img.shields.io/github/license/lootmancerstudios/trueblessed)
+![trueblessed-issues](https://img.shields.io/github/issues/lootmancerstudios/trueblessed)
 
-A curses-like library with a high level terminal interface API for node.js.
+A curses-like library with a high level terminal interface API for node.js, featuring modern terminal capabilities and true 24-bit RGB color support.
 
-![reblessed](https://raw.githubusercontent.com/chjj/blessed/master/img/v0.1.0-3.gif)
+![blessed](https://raw.githubusercontent.com/chjj/blessed/master/img/v0.1.0-3.gif)
 
-The library's official author, "chjj", seems to have abandoned the project, as the last commit was in 2016.
-All forks have also died, so I took matters into my own hands and forked the project.
-
-Blessed is a fantastic project, so I revived this masterpiece from the dead under the name "Re-Blessed", as I wasn’t able to find any other TUI libraries that had exactly what a TUI application needed!
+Trueblessed builds upon the excellent work of blessed and its forks, adding modern terminal features including:
+- **True 24-bit RGB color support** - Full truecolor rendering with `{#RRGGBB-fg}` and `{#RRGGBB-bg}` tags
+- **TypeScript definitions** - Complete type safety for TypeScript projects
+- **Modern terminal detection** - Auto-detection of truecolor support via COLORTERM and terminal capabilities
 
 ## Install
 
-### Latest release
+### From source
 
 ``` bash
-npm install reblessed
+git clone https://github.com/lootmancerstudios/trueblessed.git
+cd trueblessed
+npm install
+npm run build
 ```
 
-### Latest source code
+### Local development
 
 ``` bash
-git clone git@github.com:kenan238/reblessed.git
+npm link
+# Then in your project:
+npm link trueblessed
 ```
 
 ## Example
@@ -37,21 +41,22 @@ This will render a box with line borders containing the text `'Hello world!'`,
 perfectly centered horizontally and vertically.
 
 **NOTE**: It is recommend you use either `smartCSR` or `fastCSR` as a
-`reblessed.screen` option. This will enable CSR when scrolling text in elements
+`trueblessed.screen` option. This will enable CSR when scrolling text in elements
 or when manipulating lines.
 
 ``` js
-const reblessed = require('reblessed');
+const trueblessed = require('trueblessed');
 
-// Create a screen object.
-const screen = reblessed.screen({
-  smartCSR: true
+// Create a screen object with truecolor support.
+const screen = trueblessed.screen({
+  smartCSR: true,
+  truecolor: true  // Enable 24-bit RGB colors
 });
 
 screen.title = 'my window title';
 
 // Create a box perfectly centered horizontally and vertically.
-const box = reblessed.box({
+const box = trueblessed.box({
     top: 'center',
     left: 'center',
     width: '50%',
@@ -77,7 +82,7 @@ const box = reblessed.box({
 screen.append(box);
 
 // Add a png icon to the box
-const icon = reblessed.image({
+const icon = trueblessed.image({
     parent: box,
     top: 0,
     left: 0,
