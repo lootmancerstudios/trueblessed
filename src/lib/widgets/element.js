@@ -253,6 +253,22 @@ Element.prototype.sattr = function(style, fg, bg) {
   if (typeof fg === 'function') fg = fg(this);
   if (typeof bg === 'function') bg = bg(this);
 
+  // Convert colors - use RGB if truecolor is enabled
+  var fgCode, bgCode;
+
+  if (this.screen && this.screen.program && this.screen.program.hasTruecolor) {
+    // Try to extract RGB values for truecolor
+    var fgRgb = colors.toRGB(fg);
+    var bgRgb = colors.toRGB(bg);
+
+    fgCode = fgRgb ? this.screen._allocRgbColor(fgRgb.r, fgRgb.g, fgRgb.b) : colors.convert(fg);
+    bgCode = bgRgb ? this.screen._allocRgbColor(bgRgb.r, bgRgb.g, bgRgb.b) : colors.convert(bg);
+  } else {
+    // Fall back to 256-color
+    fgCode = colors.convert(fg);
+    bgCode = colors.convert(bg);
+  }
+
   // return (this.uid << 24)
   //   | ((this.dockBorders ? 32 : 0) << 18)
   return ((invisible ? 16 : 0) << 18)
@@ -260,8 +276,8 @@ Element.prototype.sattr = function(style, fg, bg) {
     | ((blink ? 4 : 0) << 18)
     | ((underline ? 2 : 0) << 18)
     | ((bold ? 1 : 0) << 18)
-    | (colors.convert(fg) << 9)
-    | colors.convert(bg);
+    | (fgCode << 9)
+    | bgCode;
 };
 
 Element.prototype.onScreenEvent = function(type, handler) {
