@@ -118,6 +118,11 @@ function Screen(options) {
 
   this._ci = -1;
 
+  // RGB color storage for truecolor support
+  // Maps color IDs (256-510) to {r, g, b} objects
+  this._rgbColors = {};
+  this._rgbColorId = 256; // Start at 256 (above 256-color range)
+
   if (options.title) {
     this.title = options.title;
   }
@@ -1508,6 +1513,31 @@ Screen.prototype.attrCode = function(code, cur, def) {
 };
 
 // Convert our own attribute format to an SGR string.
+// Allocate an RGB color ID and store the RGB values
+Screen.prototype._allocRgbColor = function(r, g, b) {
+  // Create a hash key for deduplication
+  var key = (r << 16) | (g << 8) | b;
+
+  // Check if we already have this RGB color
+  for (var id in this._rgbColors) {
+    var rgb = this._rgbColors[id];
+    if (rgb.r === r && rgb.g === g && rgb.b === b) {
+      return +id;
+    }
+  }
+
+  // Allocate new ID
+  var id = this._rgbColorId++;
+  if (id > 510) {
+    // Wrap around if we run out of IDs (shouldn't happen in practice)
+    this._rgbColorId = 256;
+    id = this._rgbColorId++;
+  }
+
+  this._rgbColors[id] = { r: r, g: g, b: b };
+  return id;
+};
+
 Screen.prototype.codeAttr = function(code) {
   var flags = (code >> 18) & 0x1ff
     , fg = (code >> 9) & 0x1ff
@@ -1540,32 +1570,44 @@ Screen.prototype.codeAttr = function(code) {
   }
 
   if (bg !== 0x1ff) {
-    bg = this._reduceColor(bg);
-    if (bg < 16) {
-      if (bg < 8) {
-        bg += 40;
-      } else if (bg < 16) {
-        bg -= 8;
-        bg += 100;
-      }
-      out += bg + ';';
+    // Check if this is an RGB color BEFORE reducing (ID >= 256)
+    if (bg >= 256 && bg <= 510 && this._rgbColors[bg]) {
+      var rgb = this._rgbColors[bg];
+      out += '48;2;' + rgb.r + ';' + rgb.g + ';' + rgb.b + ';';
     } else {
-      out += '48;5;' + bg + ';';
+      bg = this._reduceColor(bg);
+      if (bg < 16) {
+        if (bg < 8) {
+          bg += 40;
+        } else if (bg < 16) {
+          bg -= 8;
+          bg += 100;
+        }
+        out += bg + ';';
+      } else {
+        out += '48;5;' + bg + ';';
+      }
     }
   }
 
   if (fg !== 0x1ff) {
-    fg = this._reduceColor(fg);
-    if (fg < 16) {
-      if (fg < 8) {
-        fg += 30;
-      } else if (fg < 16) {
-        fg -= 8;
-        fg += 90;
-      }
-      out += fg + ';';
+    // Check if this is an RGB color BEFORE reducing (ID >= 256)
+    if (fg >= 256 && fg <= 510 && this._rgbColors[fg]) {
+      var rgb = this._rgbColors[fg];
+      out += '38;2;' + rgb.r + ';' + rgb.g + ';' + rgb.b + ';';
     } else {
-      out += '38;5;' + fg + ';';
+      fg = this._reduceColor(fg);
+      if (fg < 16) {
+        if (fg < 8) {
+          fg += 30;
+        } else if (fg < 16) {
+          fg -= 8;
+          fg += 90;
+        }
+        out += fg + ';';
+      } else {
+        out += '38;5;' + fg + ';';
+      }
     }
   }
 

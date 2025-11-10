@@ -107,6 +107,17 @@ function Program(options) {
     }
   })();
 
+  // Detect truecolor (24-bit RGB) support
+  this.hasTruecolor = false;
+  if (options.truecolor !== false) {
+    var colorterm = process.env.COLORTERM;
+    this.hasTruecolor = colorterm === 'truecolor' || colorterm === '24bit';
+    // Some terminals support truecolor but don't set COLORTERM
+    if (!this.hasTruecolor && (this.isiTerm2 || this.isVTE)) {
+      this.hasTruecolor = true;
+    }
+  }
+
   this._buf = '';
   this._flush = this.flush.bind(this);
 
