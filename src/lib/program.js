@@ -2799,7 +2799,28 @@ Program.prototype._attr = function(param, val) {
         '\x1b[39;49m';
 
     default:
-      // 256-color fg and bg
+      // TRUECOLOR: Check for 24-bit RGB support first
+      if (this.hasTruecolor && param[0] === '#') {
+        // Extract RGB values from hex color
+        var hexMatch = /#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(param);
+        if (hexMatch) {
+          var r = parseInt(hexMatch[1], 16);
+          var g = parseInt(hexMatch[2], 16);
+          var b = parseInt(hexMatch[3], 16);
+
+          // Determine fg or bg from param
+          if (param.indexOf('fg') !== -1) {
+            return '\x1b[38;2;' + r + ';' + g + ';' + b + 'm';  // 24-bit foreground
+          }
+          if (param.indexOf('bg') !== -1) {
+            return '\x1b[48;2;' + r + ';' + g + ';' + b + 'm';  // 24-bit background
+          }
+          // Default to foreground
+          return '\x1b[38;2;' + r + ';' + g + ';' + b + 'm';
+        }
+      }
+
+      // 256-color fg and bg (fallback for non-truecolor terminals)
       if (param[0] === '#') {
         param = param.replace(/#(?:[0-9a-f]{3}){1,2}/i, colors.match);
       }
