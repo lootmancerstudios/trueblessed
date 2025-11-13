@@ -53,6 +53,10 @@ function Screen(options) {
       terminal: options.terminal || options.term,
       resizeTimeout: options.resizeTimeout,
       forceUnicode: options.forceUnicode,
+      bracketedPaste: options.bracketedPaste,
+      stripPasteMarkers: options.stripPasteMarkers,
+      maxPasteSize: options.maxPasteSize,
+      pasteTimeout: options.pasteTimeout,
       tput: true,
       buffer: true,
       zero: true
@@ -163,6 +167,10 @@ function Screen(options) {
 
   this.program.on('warning', function(text) {
     self.emit('warning', text);
+  });
+
+  this.program.on('paste', function(content) {
+    self.emit('paste', content);
   });
 
   this.on('newListener', function fn(type) {
