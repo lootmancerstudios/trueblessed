@@ -164,18 +164,40 @@ function emitKeys(stream, s) {
 
   // Handle bracketed paste mode
   if (stream._pasteEnabled) {
+    // DEBUG: Log input
+    if (process.env.DEBUG_PASTE) {
+      console.log('[PASTE DEBUG] Input s:', JSON.stringify(s), 'hex:', s.split('').map(c => c.charCodeAt(0).toString(16)).join(' '));
+    }
+
     // Combine with any partial sequence from previous buffer
     if (stream._partialSequence) {
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Restoring partial:', JSON.stringify(stream._partialSequence));
+      }
       s = stream._partialSequence + s;
       stream._partialSequence = '';
     }
 
     // Check for partial paste marker at end of buffer
     // This handles the case where \x1b[200~ or \x1b[201~ is split across buffers
-    var partialPasteMarker = /(\x1b|\x1b\[|\x1b\[2|\x1b\[20|\x1b\[200)$/.exec(s);
+    // IMPORTANT: Only match sequences that are SPECIFICALLY the start of paste markers:
+    //   \x1b[2    - could be \x1b[200~ or \x1b[201~
+    //   \x1b[20   - could be \x1b[200~ or \x1b[201~
+    //   \x1b[200  - partial paste start marker
+    //   \x1b[201  - partial paste end marker
+    // DO NOT match:
+    //   \x1b      - standalone ESC key
+    //   \x1b[     - could be arrow keys, F-keys, etc. (not paste-specific)
+    var partialPasteMarker = /(\x1b\[20[01]?|\x1b\[2)$/.exec(s);
     if (partialPasteMarker) {
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Detected partial marker:', JSON.stringify(partialPasteMarker[1]), '- STORING FOR NEXT INPUT');
+      }
       stream._partialSequence = partialPasteMarker[1];
       s = s.slice(0, partialPasteMarker.index);
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Remaining s after removing partial:', JSON.stringify(s));
+      }
     }
 
     // Detect paste start marker: \x1b[200~
