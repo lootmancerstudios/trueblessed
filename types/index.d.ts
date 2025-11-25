@@ -3330,6 +3330,30 @@ export namespace Widgets {
          * add a log line.
          */
         add(text: string): void;
+
+        /**
+         * Update the current (last) line in-place.
+         * Useful for streaming output where partial lines update progressively.
+         *
+         * Example:
+         *   logger.log('Starting download...');
+         *   logger.updateCurrentLine('Downloading: 50%');  // Replaces "Starting download..."
+         *   logger.updateCurrentLine('Downloading: 100%'); // Replaces "Downloading: 50%"
+         *   logger.log('Done!');                           // Commits "Downloading: 100%", adds new line
+         */
+        updateCurrentLine(text: string): void;
+
+        /**
+         * Delete the last line from the log.
+         * Useful for removing placeholder/working lines.
+         */
+        deleteLastLine(n?: number): void;
+
+        /**
+         * Replace the last line with new text.
+         * Alias for updateCurrentLine for semantic clarity.
+         */
+        replaceLastLine(text: string): void;
     }
 
     interface TableOptions extends BoxOptions {
