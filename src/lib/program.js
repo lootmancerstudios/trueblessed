@@ -580,6 +580,14 @@ Program.prototype.key = function(key, listener) {
   key.forEach(function(key) {
     return this.on('key ' + key, listener);
   }, this);
+
+  // Return cleanup function for modern cleanup pattern
+  var self = this;
+  return function cleanup() {
+    key.forEach(function(k) {
+      self.removeListener('key ' + k, listener);
+    });
+  };
 };
 
 Program.prototype.onceKey = function(key, listener) {

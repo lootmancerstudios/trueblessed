@@ -245,7 +245,7 @@ export class BlessedProgram extends EventEmitter {
     listen(): void;
     destroy(): void;
 
-    key(key: string | string[], listener: Function): void;
+    key(key: string | string[], listener: Function): () => void;
     onceKey(key: string | string[], listener: Function): void;
 
     unKey(key: string | string[], listener: Function): void;
@@ -1045,8 +1045,9 @@ export namespace Widgets {
     class NodeWithEvents extends Node {
         /**
          * Bind a keypress listener for a specific key.
+         * Returns a cleanup function that removes the listener.
          */
-        key(name: string | string[], listener: (ch: any, key: Events.IKeyEventArg) => void): void;
+        key(name: string | string[], listener: (ch: any, key: Events.IKeyEventArg) => void): () => void;
 
         /**
          * Bind a keypress listener for a specific key once.
