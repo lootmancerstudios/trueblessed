@@ -4,6 +4,17 @@
 
 ### Added
 
+- **Log Widget In-Place Line Updates**: New methods for updating lines without creating duplicates
+  - `updateCurrentLine(text)` - Updates the last line in-place (perfect for streaming output, progress bars)
+  - `deleteLastLine(n)` - Removes the last n lines
+  - `replaceLastLine(text)` - Alias for updateCurrentLine for semantic clarity
+  - Enables modern streaming UX patterns (AI responses, download progress, live status updates)
+  - Fully backward compatible - existing `log()` behavior unchanged
+  - TypeScript definitions included
+  - Example use case: Streaming AI responses without duplicates
+  - Unit tests: `node test-updateCurrentLine-unit.js`
+  - Interactive demo: `node test-updateCurrentLine.js`
+
 - **Bracketed Paste Mode Support**: Applications can now detect and handle pasted content separately from typed input
   - New `bracketedPaste` option for `screen` and `program` constructors
   - New `paste` event fires when content is pasted, providing the full pasted string
