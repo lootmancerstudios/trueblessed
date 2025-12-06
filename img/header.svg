@@ -1,0 +1,84 @@
+<svg width="1000" height="250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main text gradient: pink to blue -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#efa0cf;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#b78ce3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#75a0f5;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Background gradient: dark modern -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a15;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#141420;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a15;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Accent gradient for geometric elements -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#efa0cf;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#75a0f5;stop-opacity:0.1" />
+    </linearGradient>
+
+    <!-- Glow effect for text -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle blur for background elements -->
+    <filter id="blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <!-- Dark gradient background -->
+  <rect width="1000" height="250" fill="url(#bgGradient)"/>
+
+  <!-- Decorative geometric elements -->
+  <!-- Top left accent -->
+  <circle cx="100" cy="50" r="80" fill="url(#accentGradient)" filter="url(#blur)" opacity="0.3"/>
+  <circle cx="120" cy="60" r="40" fill="url(#accentGradient)" filter="url(#blur)" opacity="0.2"/>
+
+  <!-- Bottom right accent -->
+  <circle cx="900" cy="200" r="100" fill="url(#accentGradient)" filter="url(#blur)" opacity="0.3"/>
+  <circle cx="850" cy="180" r="60" fill="url(#accentGradient)" filter="url(#blur)" opacity="0.2"/>
+
+  <!-- Grid pattern overlay (subtle) -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.02"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="250" fill="url(#grid)"/>
+
+  <!-- Main text: TRUEBLESSED -->
+  <text x="500" y="145"
+        font-family="'Inter', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="72"
+        font-weight="800"
+        fill="url(#textGradient)"
+        text-anchor="middle"
+        filter="url(#glow)"
+        letter-spacing="4">
+    TRUEBLESSED
+  </text>
+
+  <!-- Subtle underline accent -->
+  <line x1="350" y1="165" x2="650" y2="165" stroke="url(#textGradient)" stroke-width="2" opacity="0.5"/>
+
+  <!-- Tagline -->
+  <text x="500" y="195"
+        font-family="'Inter', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="20"
+        font-weight="400"
+        fill="#ffffff"
+        text-anchor="middle"
+        opacity="0.7"
+        letter-spacing="1">
+    Modernized TUI library with pretty colors
+  </text>
+</svg>

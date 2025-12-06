@@ -1,4 +1,7 @@
-# trueblessed
+<div align="center">
+  <img src="img/header.svg" alt="Trueblessed" />
+  <br/><br/>
+</div>
 
 #### If you'd like to request a feature, make a new issue
 
@@ -9,7 +12,7 @@
 
 A curses-like library with a high level terminal interface API for node.js, featuring modern terminal capabilities and true 24-bit RGB color support.
 
-![blessed](https://raw.githubusercontent.com/chjj/blessed/master/img/v0.1.0-3.gif)
+![trueblessed demo](img/v0.1.0-3.gif)
 
 Trueblessed builds upon the excellent work of blessed and its forks, adding modern terminal features including:
 - **True 24-bit RGB color support** - Full truecolor rendering with `{#RRGGBB-fg}` and `{#RRGGBB-bg}` tags
