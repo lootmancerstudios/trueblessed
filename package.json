@@ -1,24 +1,31 @@
 {
-  "name": "reblessed",
-  "description": "A high-level terminal interface library for node.js.",
-  "author": "Christopher Jeffrey / kenan238",
-  "version": "0.2.1",
+  "name": "trueblessed",
+  "description": "A high-level terminal interface library for node.js with modern terminal features and true 24-bit color support.",
+  "author": "Christopher Jeffrey / kenan238 / LootMancerStudios",
+  "version": "0.3.0",
   "license": "MIT",
   "main": "./src/lib/reblessed.js",
+  "types": "./types/index.d.ts",
   "bin": "./bin/tput.js",
   "preferGlobal": false,
-  "repository": "git://github.com/kenan238/reblessed.git",
-  "homepage": "https://github.com/kenan238/reblessed.git",
+  "repository": "git://github.com/lootmancerstudios/trueblessed.git",
+  "homepage": "https://github.com/lootmancerstudios/trueblessed",
   "bugs": {
-    "url": "https://github.com/kenan238/reblessed.git"
+    "url": "https://github.com/lootmancerstudios/trueblessed/issues"
   },
   "keywords": [
     "blessed",
+    "trueblessed",
+    "truecolor",
+    "24-bit",
+    "rgb",
     "curses",
     "tui",
     "tput",
     "terminfo",
-    "termcap"
+    "termcap",
+    "terminal",
+    "typescript"
   ],
   "tags": [
     "curses",
