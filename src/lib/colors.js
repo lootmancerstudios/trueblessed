@@ -357,6 +357,33 @@ var colorNames = exports.colorNames = {
   brightgray: 7
 };
 
+// Extract RGB values from a color (returns null if not RGB, or {r,g,b} if RGB)
+exports.toRGB = function(color) {
+  if (typeof color === 'string' && color[0] === '#') {
+    var rgb = exports.hexToRGB(color);
+    return { r: rgb[0], g: rgb[1], b: rgb[2] };
+  } else if (Array.isArray(color) && color.length === 3) {
+    return { r: color[0], g: color[1], b: color[2] };
+  } else if (typeof color === 'object' && color.r != null && color.g != null && color.b != null) {
+    return { r: color.r, g: color.g, b: color.b };
+  }
+  return null;
+};
+
+// Create an RGB color object (for use with truecolor-enabled terminals)
+exports.rgb = function(r, g, b) {
+  if (typeof r === 'object') {
+    b = r.b;
+    g = r.g;
+    r = r.r;
+  } else if (Array.isArray(r)) {
+    b = r[2];
+    g = r[1];
+    r = r[0];
+  }
+  return { r: r, g: g, b: b };
+};
+
 exports.convert = function(color) {
   if (typeof color === 'number') {
     ;

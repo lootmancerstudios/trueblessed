@@ -4,7 +4,7 @@
   "author": "Christopher Jeffrey / kenan238",
   "version": "0.2.1",
   "license": "MIT",
-  "main": "./dist/lib/reblessed.js",
+  "main": "./src/lib/reblessed.js",
   "bin": "./bin/tput.js",
   "preferGlobal": false,
   "repository": "git://github.com/kenan238/reblessed.git",
