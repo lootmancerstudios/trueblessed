@@ -4,7 +4,7 @@
  * https://github.com/chjj/blessed
  */
 
-var blessed = require('reblessed')
+var blessed = require('trueblessed')
   , program = blessed.program();
 
 process.title = 'blessed';

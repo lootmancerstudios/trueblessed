@@ -4,7 +4,7 @@
   "author": "Christopher Jeffrey / kenan238 / LootMancerStudios",
   "version": "0.3.0",
   "license": "MIT",
-  "main": "./src/lib/reblessed.js",
+  "main": "./src/lib/trueblessed.js",
   "types": "./types/index.d.ts",
   "bin": "./bin/tput.js",
   "preferGlobal": false,
@@ -36,11 +36,6 @@
   ],
   "engines": {
     "node": ">= 8.10"
-  },
-  "browserify": {
-    "transform": [
-      "./browser/transform.js"
-    ]
   },
   "scripts": {
     "prepublishOnly": "npm run build",

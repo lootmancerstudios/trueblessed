@@ -1,4 +1,4 @@
-var blessed = require('../dist/lib/reblessed');
+var blessed = require('../');
 
 // Create a screen object.
 var screen = blessed.screen();
