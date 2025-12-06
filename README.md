@@ -270,6 +270,19 @@ screen.on('keypress', (ch, key) => {
 });
 ```
 
+## Attribution
+
+Trueblessed is a modern terminal interface library that continues the legacy of the blessed project.
+
+**Project lineage:**
+- **blessed** - Original high-level terminal interface library created by Christopher Jeffrey (2013-2015)
+- **reblessed** - Fork by kenan238 (2021) adding various improvements and bug fixes
+- **trueblessed** - Modern successor by LootMancerStudios (2025-present) focused on modern terminal features
+
+This project builds upon the excellent foundation established by Christopher Jeffrey and the improvements contributed by kenan238. Trueblessed extends this work with modern terminal capabilities including true 24-bit RGB colors, bracketed paste mode security, streaming log updates, and comprehensive TypeScript support.
+
+While trueblessed began as a fork of reblessed, it is now independently developed and maintained with a focus on bringing blessed's powerful TUI capabilities to modern terminal environments.
+
 ## Documentation
 
 Go to the WIKI tab
