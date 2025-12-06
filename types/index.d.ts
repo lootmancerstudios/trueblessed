@@ -3896,4 +3896,4 @@ interface Blessed {
 }
 
 declare const blessed: Blessed;
-export default blessed;
+export = blessed;
