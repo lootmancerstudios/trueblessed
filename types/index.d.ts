@@ -769,6 +769,29 @@ export namespace Widgets {
         }
     }
 
+    /**
+     * Convenient type aliases for event arguments.
+     * These provide easier access to event types without namespace qualification.
+     */
+
+    /**
+     * Key event argument passed to key event handlers.
+     * Contains information about the pressed key including modifiers.
+     */
+    export type KeyEvent = Events.IKeyEventArg;
+
+    /**
+     * Mouse event argument passed to mouse event handlers.
+     * Contains mouse position and action type (mousedown, mouseup, click, etc.).
+     */
+    export type MouseEvent = Events.IMouseEventArg;
+
+    /**
+     * Wheel event argument (same as MouseEvent but with wheelup/wheeldown action).
+     * Contains mouse position and wheel direction.
+     */
+    export type WheelEvent = Events.IMouseEventArg;
+
     interface NodeChildProcessExecOptions {
         cwd?: string | undefined;
         stdio?: any;
@@ -1529,6 +1552,22 @@ export namespace Widgets {
         _rgbColorId: number;
 
         /**
+         * Flag indicating whether clickable elements need to be resorted.
+         * Used internally to optimize clickable element management.
+         *
+         * @internal
+         */
+        _needsClickableSort: boolean;
+
+        /**
+         * Internal event handlers map.
+         * Stores event listeners for the screen.
+         *
+         * @internal
+         */
+        _events: { [event: string]: Function[] };
+
+        /**
          * Allocate a 24-bit RGB color and return its ID.
          *
          * Process:
@@ -1960,7 +1999,10 @@ export namespace Widgets {
          */
         border: Border;
 
-        style: any;
+        /**
+         * Style properties for the element including colors, effects, and borders.
+         */
+        style: Types.TStyle;
         position: Position;
         content: string;
         hidden: boolean;
@@ -3058,6 +3100,14 @@ export namespace Widgets {
          * Replace text with asterisks (*).
          */
         censor: boolean;
+
+        /**
+         * Internal calculated lines buffer for the textbox content.
+         * Used for rendering and scrolling calculations.
+         *
+         * @internal
+         */
+        _clines: string[];
     }
 
     interface ButtonOptions extends BoxOptions {}
@@ -3323,6 +3373,25 @@ export namespace Widgets {
         scrollOnInput: boolean;
 
         /**
+         * Array of logged lines for programmatic access.
+         * Contains the actual content lines that have been logged.
+         */
+        logLines: string[];
+
+        /**
+         * Internal calculated lines buffer used for rendering.
+         * @internal
+         */
+        _clines: { fake?: string[] };
+
+        /**
+         * Track whether the user has manually scrolled.
+         * Used to determine auto-scroll behavior.
+         * @internal
+         */
+        _userScrolled: boolean;
+
+        /**
          * add a log line.
          */
         log(text: string): void;
@@ -3355,6 +3424,21 @@ export namespace Widgets {
          * Alias for updateCurrentLine for semantic clarity.
          */
         replaceLastLine(text: string): void;
+
+        /**
+         * Set content of a specific line by index.
+         */
+        setLine(index: number, text: string): void;
+
+        /**
+         * Delete line at specified index, or last line if no index provided.
+         */
+        deleteLine(index?: number): void;
+
+        /**
+         * Get current scroll position as percentage (0-100).
+         */
+        getScrollPerc(): number;
     }
 
     interface TableOptions extends BoxOptions {
@@ -3748,3 +3832,61 @@ export function parseTags(text: string, screen?: Widgets.Screen): string;
 export const colors: {
     match(hexColor: string): string;
 };
+
+/**
+ * Default export providing both callable program creation and widget factory methods.
+ * This allows both `blessed()` as a function and `blessed.screen()` as a method.
+ */
+interface Blessed {
+    /**
+     * Create a Program instance (callable form).
+     */
+    (options?: Widgets.IScreenOptions): BlessedProgram;
+
+    // Widget creation methods
+    screen(options?: Widgets.IScreenOptions): Widgets.Screen;
+    box(options?: Widgets.BoxOptions): Widgets.BoxElement;
+    text(options?: Widgets.TextOptions): Widgets.TextElement;
+    line(options?: Widgets.LineOptions): Widgets.LineElement;
+    scrollablebox(options?: Widgets.BoxOptions): Widgets.BoxElement;
+    scrollabletext(options?: Widgets.BoxOptions): Widgets.BoxElement;
+    bigtext(options?: Widgets.BigTextOptions): Widgets.BigTextElement;
+    list(options?: Widgets.ListOptions<Widgets.ListElementStyle>): Widgets.ListElement;
+    filemanager(options?: Widgets.FileManagerOptions): Widgets.FileManagerElement;
+    listtable(options?: Widgets.ListTableOptions): Widgets.ListTableElement;
+    listbar(options?: Widgets.ListbarOptions): Widgets.ListbarElement;
+    form<TFormData>(options?: Widgets.FormOptions): Widgets.FormElement<TFormData>;
+    input(options?: Widgets.InputOptions): Widgets.InputElement;
+    textarea(options?: Widgets.TextareaOptions): Widgets.TextareaElement;
+    textbox(options?: Widgets.TextboxOptions): Widgets.TextboxElement;
+    button(options?: Widgets.ButtonOptions): Widgets.ButtonElement;
+    checkbox(options?: Widgets.CheckboxOptions): Widgets.CheckboxElement;
+    radioset(options?: Widgets.RadioSetOptions): Widgets.RadioSetElement;
+    radiobutton(options?: Widgets.RadioButtonOptions): Widgets.RadioButtonElement;
+    table(options?: Widgets.TableOptions): Widgets.TableElement;
+    prompt(options?: Widgets.PromptOptions): Widgets.PromptElement;
+    question(options?: Widgets.QuestionOptions): Widgets.QuestionElement;
+    message(options?: Widgets.MessageOptions): Widgets.MessageElement;
+    loading(options?: Widgets.LoadingOptions): Widgets.LoadingElement;
+    log(options?: Widgets.LogOptions): Widgets.Log;
+    progressbar(options?: Widgets.ProgressBarOptions): Widgets.ProgressBarElement;
+    program(options?: Widgets.IScreenOptions): BlessedProgram;
+    terminal(options?: Widgets.TerminalOptions): Widgets.TerminalElement;
+    layout(options?: Widgets.LayoutOptions): Widgets.LayoutElement;
+
+    // Utility methods
+    escape(text: string): string;
+    stripTags(text: string): string;
+    cleanTags(text: string): string;
+    generateTags(style: any, text: string): string;
+    parseTags(text: string, screen?: Widgets.Screen): string;
+
+    // Namespaces and classes
+    Program: typeof BlessedProgram;
+    Tput: typeof Tput;
+    widget: typeof widget;
+    colors: typeof colors;
+}
+
+declare const blessed: Blessed;
+export default blessed;
