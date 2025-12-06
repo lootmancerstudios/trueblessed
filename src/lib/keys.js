@@ -39,13 +39,50 @@ function listenerCount(stream, event) {
  * accepts a readable Stream instance and makes it emit "keypress" events
  */
 
-function emitKeypressEvents(stream) {
-  if (stream._keypressDecoder) return;
+function emitKeypressEvents(stream, options) {
+  // Handle options update if already initialized
+  if (stream._keypressDecoder) {
+    if (options) {
+      // Update paste options if they were provided
+      stream._pasteEnabled = options.bracketedPaste || false;
+      stream._stripPasteMarkers = options.stripPasteMarkers !== false;
+      stream._maxPasteSize = options.maxPasteSize || (10 * 1024 * 1024); // 10MB default
+      stream._pasteTimeout = options.pasteTimeout || 5000; // 5 seconds default
+    }
+    return;
+  }
+
   var StringDecoder = require('string_decoder').StringDecoder; // lazy load
   stream._keypressDecoder = new StringDecoder('utf8');
 
+  // Initialize paste state tracking
+  options = options || {};
+  stream._pasteEnabled = options.bracketedPaste || false;
+  stream._stripPasteMarkers = options.stripPasteMarkers !== false; // default true
+  stream._maxPasteSize = options.maxPasteSize || (10 * 1024 * 1024); // 10MB default
+  stream._pasteTimeout = options.pasteTimeout || 5000; // 5 seconds default
+  stream._pasteMode = false;
+  stream._pasteBuffer = '';
+  stream._pasteBufferSize = 0;
+  stream._pasteStartTime = 0;
+  stream._pasteTimer = null;
+  stream._partialSequence = ''; // For handling split escape sequences
+
+  // Helper function to reset paste state
+  stream._resetPasteState = function() {
+    if (stream._pasteTimer) {
+      clearTimeout(stream._pasteTimer);
+      stream._pasteTimer = null;
+    }
+    stream._pasteMode = false;
+    stream._pasteBuffer = '';
+    stream._pasteBufferSize = 0;
+    stream._pasteStartTime = 0;
+  };
+
   function onData(b) {
-    if (listenerCount(stream, 'keypress') > 0) {
+    // Always process data if paste is enabled or if there are keypress listeners
+    if (stream._pasteEnabled || listenerCount(stream, 'keypress') > 0 || listenerCount(stream, 'paste') > 0) {
       var r = stream._keypressDecoder.write(b);
       if (r) emitKeys(stream, r);
     } else {
@@ -56,13 +93,14 @@ function emitKeypressEvents(stream) {
   }
 
   function onNewListener(event) {
-    if (event === 'keypress') {
+    if (event === 'keypress' || event === 'paste') {
       stream.on('data', onData);
       stream.removeListener('newListener', onNewListener);
     }
   }
 
-  if (listenerCount(stream, 'keypress') > 0) {
+  // If paste is enabled, always set up the data listener
+  if (stream._pasteEnabled || listenerCount(stream, 'keypress') > 0 || listenerCount(stream, 'paste') > 0) {
     stream.on('data', onData);
   } else {
     stream.on('newListener', onNewListener);
@@ -124,6 +162,189 @@ function emitKeys(stream, s) {
   if (isMouse(s))
     return;
 
+  // Handle bracketed paste mode
+  if (stream._pasteEnabled) {
+    // DEBUG: Log input
+    if (process.env.DEBUG_PASTE) {
+      console.log('[PASTE DEBUG] Input s:', JSON.stringify(s), 'hex:', s.split('').map(c => c.charCodeAt(0).toString(16)).join(' '));
+    }
+
+    // Combine with any partial sequence from previous buffer
+    if (stream._partialSequence) {
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Restoring partial:', JSON.stringify(stream._partialSequence));
+      }
+      s = stream._partialSequence + s;
+      stream._partialSequence = '';
+    }
+
+    // Check for partial paste marker at end of buffer
+    // This handles the case where \x1b[200~ or \x1b[201~ is split across buffers
+    // IMPORTANT: Only match sequences that are SPECIFICALLY the start of paste markers:
+    //   \x1b[2    - could be \x1b[200~ or \x1b[201~
+    //   \x1b[20   - could be \x1b[200~ or \x1b[201~
+    //   \x1b[200  - partial paste start marker
+    //   \x1b[201  - partial paste end marker
+    // DO NOT match:
+    //   \x1b      - standalone ESC key
+    //   \x1b[     - could be arrow keys, F-keys, etc. (not paste-specific)
+    var partialPasteMarker = /(\x1b\[20[01]?|\x1b\[2)$/.exec(s);
+    if (partialPasteMarker) {
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Detected partial marker:', JSON.stringify(partialPasteMarker[1]), '- STORING FOR NEXT INPUT');
+      }
+      stream._partialSequence = partialPasteMarker[1];
+      s = s.slice(0, partialPasteMarker.index);
+      if (process.env.DEBUG_PASTE) {
+        console.log('[PASTE DEBUG] Remaining s after removing partial:', JSON.stringify(s));
+      }
+    }
+
+    // Detect paste start marker: \x1b[200~
+    var pasteStartIndex = s.indexOf('\x1b[200~');
+    if (pasteStartIndex !== -1) {
+      // Process any data before the paste marker
+      if (pasteStartIndex > 0) {
+        var before = s.slice(0, pasteStartIndex);
+        emitKeysNoPaste(stream, before);
+      }
+
+      // Enter paste mode
+      stream._pasteMode = true;
+      stream._pasteBuffer = '';
+      stream._pasteBufferSize = 0;
+      stream._pasteStartTime = Date.now();
+
+      // Start timeout timer to prevent hanging on incomplete paste
+      stream._pasteTimer = setTimeout(function() {
+        if (stream._pasteMode) {
+          // Timeout - emit warning and reset
+          try {
+            stream.emit('paste-timeout', {
+              buffer: stream._pasteBuffer,
+              size: stream._pasteBufferSize,
+              elapsed: Date.now() - stream._pasteStartTime
+            });
+          } catch (err) {
+            // Silently ignore errors in user event handlers
+          }
+          stream._resetPasteState();
+        }
+      }, stream._pasteTimeout);
+
+      // Remove the marker and continue with remaining data
+      s = s.slice(pasteStartIndex + 6); // 6 = length of '\x1b[200~'
+    }
+
+    // Detect paste end marker: \x1b[201~
+    var pasteEndIndex = s.indexOf('\x1b[201~');
+    if (pasteEndIndex !== -1) {
+      if (stream._pasteMode) {
+        // Add content before end marker to buffer
+        var chunk = s.slice(0, pasteEndIndex);
+        var chunkSize = Buffer.byteLength(chunk, 'utf8');
+
+        // Check if adding this chunk would exceed size limit
+        if (stream._pasteBufferSize + chunkSize > stream._maxPasteSize) {
+          // Size limit exceeded - emit error and reset
+          try {
+            stream.emit('paste-overflow', {
+              currentSize: stream._pasteBufferSize,
+              attemptedSize: stream._pasteBufferSize + chunkSize,
+              maxSize: stream._maxPasteSize
+            });
+          } catch (err) {
+            // Silently ignore errors in user event handlers
+          }
+          stream._resetPasteState();
+
+          // Process remaining data after paste marker
+          var after = s.slice(pasteEndIndex + 6);
+          if (after) {
+            emitKeysNoPaste(stream, after);
+          }
+          return;
+        }
+
+        stream._pasteBuffer += chunk;
+        stream._pasteBufferSize += chunkSize;
+
+        // Clear timeout timer
+        if (stream._pasteTimer) {
+          clearTimeout(stream._pasteTimer);
+          stream._pasteTimer = null;
+        }
+
+        // Emit paste event with error boundary
+        if (stream._pasteEnabled) {
+          try {
+            stream.emit('paste', stream._pasteBuffer);
+          } catch (err) {
+            // Silently ignore errors in user event handlers
+            // The paste still completes successfully
+          }
+        }
+
+        // Exit paste mode and reset state
+        stream._pasteMode = false;
+        stream._pasteBuffer = '';
+        stream._pasteBufferSize = 0;
+        stream._pasteStartTime = 0;
+
+        // Process any remaining data after paste marker
+        var after = s.slice(pasteEndIndex + 6); // 6 = length of '\x1b[201~'
+        if (after) {
+          emitKeysNoPaste(stream, after);
+        }
+        return;
+      } else {
+        // End marker without start - just strip it if configured
+        if (stream._stripPasteMarkers) {
+          var beforeEnd = s.slice(0, pasteEndIndex);
+          var afterEnd = s.slice(pasteEndIndex + 6);
+          s = beforeEnd + afterEnd;
+        }
+      }
+    }
+
+    // If we're in paste mode, buffer the content
+    if (stream._pasteMode) {
+      var chunkSize = Buffer.byteLength(s, 'utf8');
+
+      // Check if adding this chunk would exceed size limit
+      if (stream._pasteBufferSize + chunkSize > stream._maxPasteSize) {
+        // Size limit exceeded - emit error and reset
+        try {
+          stream.emit('paste-overflow', {
+            currentSize: stream._pasteBufferSize,
+            attemptedSize: stream._pasteBufferSize + chunkSize,
+            maxSize: stream._maxPasteSize
+          });
+        } catch (err) {
+          // Silently ignore errors in user event handlers
+        }
+        stream._resetPasteState();
+        return;
+      }
+
+      stream._pasteBuffer += s;
+      stream._pasteBufferSize += chunkSize;
+
+      // Don't emit keypress events during paste when paste is enabled
+      if (stream._pasteEnabled) {
+        return;
+      }
+      // If paste is not enabled but we're in paste mode (marker detected),
+      // fall through to normal key processing
+    }
+  }
+
+  emitKeysNoPaste(stream, s);
+}
+
+// Helper function to emit keypresses without paste handling
+// This is the original emitKeys logic extracted to avoid recursion issues
+function emitKeysNoPaste(stream, s) {
   var buffer = [];
   var match;
   while (match = escapeCodeReAnywhere.exec(s)) {

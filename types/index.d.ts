@@ -35,6 +35,131 @@ export interface IBlessedProgramOptions {
      * ```
      */
     truecolor?: boolean | undefined;
+
+    /**
+     * Enable bracketed paste mode. When enabled, pasted content is detected
+     * and emitted as a 'paste' event instead of individual keypress events.
+     *
+     * Bracketed paste mode allows the application to distinguish between
+     * typed and pasted text, enabling:
+     * - Security: Prevent accidental execution of pasted commands
+     * - UX: Handle multiline paste differently (collapse to snippet, preview, etc.)
+     * - Editor features: Disable auto-indent during paste
+     * - Input validation: Different handling for pasted vs typed content
+     *
+     * Terminal support: xterm, iTerm2, gnome-terminal, konsole, Terminal.app,
+     * Windows Terminal, and most modern terminal emulators.
+     *
+     * @default false
+     * @example
+     * ```typescript
+     * const screen = blessed.screen({
+     *   bracketedPaste: true
+     * });
+     *
+     * screen.on('paste', (content) => {
+     *   console.log('User pasted:', content);
+     *   // content may contain newlines, special characters, etc.
+     * });
+     *
+     * screen.on('keypress', (ch, key) => {
+     *   // Only fires for TYPED input when bracketedPaste is enabled
+     *   console.log('User typed:', ch);
+     * });
+     * ```
+     */
+    bracketedPaste?: boolean | undefined;
+
+    /**
+     * When false, preserve raw paste markers (\x1b[200~ and \x1b[201~)
+     * in keypress events for advanced use cases. Only relevant when
+     * bracketedPaste is false (default behavior).
+     *
+     * When bracketedPaste is true, this option is ignored as paste
+     * markers are always stripped and emitted as paste events instead.
+     *
+     * @default true (markers are stripped)
+     * @example
+     * ```typescript
+     * const screen = blessed.screen({
+     *   stripPasteMarkers: false  // See raw escape sequences
+     * });
+     *
+     * screen.on('keypress', (ch, key) => {
+     *   if (key.sequence === '\x1b[200~') {
+     *     console.log('Paste start marker');
+     *   }
+     * });
+     * ```
+     */
+    stripPasteMarkers?: boolean | undefined;
+
+    /**
+     * Maximum size (in bytes) for pasted content. When a paste exceeds
+     * this limit, a 'paste-overflow' event is emitted and the paste is
+     * rejected to prevent memory exhaustion attacks.
+     *
+     * @default 10485760 (10MB)
+     * @example
+     * ```typescript
+     * const screen = blessed.screen({
+     *   bracketedPaste: true,
+     *   maxPasteSize: 1024 * 1024  // 1MB limit
+     * });
+     *
+     * screen.on('paste-overflow', (info) => {
+     *   console.error('Paste too large:', info.attemptedSize, 'bytes');
+     * });
+     * ```
+     */
+    maxPasteSize?: number | undefined;
+
+    /**
+     * Timeout (in milliseconds) for incomplete paste operations. If a paste
+     * start marker is detected but no end marker arrives within this time,
+     * a 'paste-timeout' event is emitted and the paste state is reset.
+     *
+     * This prevents the application from hanging indefinitely if the terminal
+     * or paste operation is interrupted.
+     *
+     * @default 5000 (5 seconds)
+     * @example
+     * ```typescript
+     * const screen = blessed.screen({
+     *   bracketedPaste: true,
+     *   pasteTimeout: 10000  // 10 second timeout
+     * });
+     *
+     * screen.on('paste-timeout', (info) => {
+     *   console.warn('Paste timed out after', info.elapsed, 'ms');
+     * });
+     * ```
+     */
+    pasteTimeout?: number | undefined;
+}
+
+/**
+ * Information about a paste operation that exceeded the size limit.
+ */
+export interface IPasteOverflowInfo {
+    /** Current accumulated size before the chunk that caused overflow */
+    currentSize: number;
+    /** Total size that was attempted (currentSize + chunk that caused overflow) */
+    attemptedSize: number;
+    /** The configured maximum paste size limit */
+    maxSize: number;
+}
+
+/**
+ * Information about a paste operation that timed out.
+ */
+export interface IPasteTimeoutInfo {
+    /** The partial content that was received before timeout */
+    buffer: string;
+    /** Size of the partial content in bytes */
+    size: number;
+    /** Time elapsed since paste started, in milliseconds */
+    elapsed: number;
 }
 
 export class BlessedProgram extends EventEmitter {
@@ -80,6 +205,34 @@ export class BlessedProgram extends EventEmitter {
     hasTruecolor: boolean;
 
     constructor(options?: IBlessedProgramOptions);
+
+    // Event emitter overrides for type safety
+    on(event: 'paste', listener: (content: string) => void): this;
+    on(event: 'paste-overflow', listener: (info: IPasteOverflowInfo) => void): this;
+    on(event: 'paste-timeout', listener: (info: IPasteTimeoutInfo) => void): this;
+    on(event: 'keypress', listener: (ch: string, key: any) => void): this;
+    on(event: 'mouse', listener: (data: any) => void): this;
+    on(event: 'resize', listener: () => void): this;
+    on(event: 'warning', listener: (message: string) => void): this;
+    on(event: string, listener: (...args: any[]) => void): this;
+
+    once(event: 'paste', listener: (content: string) => void): this;
+    once(event: 'paste-overflow', listener: (info: IPasteOverflowInfo) => void): this;
+    once(event: 'paste-timeout', listener: (info: IPasteTimeoutInfo) => void): this;
+    once(event: 'keypress', listener: (ch: string, key: any) => void): this;
+    once(event: 'mouse', listener: (data: any) => void): this;
+    once(event: 'resize', listener: () => void): this;
+    once(event: 'warning', listener: (message: string) => void): this;
+    once(event: string, listener: (...args: any[]) => void): this;
+
+    emit(event: 'paste', content: string): boolean;
+    emit(event: 'paste-overflow', info: IPasteOverflowInfo): boolean;
+    emit(event: 'paste-timeout', info: IPasteTimeoutInfo): boolean;
+    emit(event: 'keypress', ch: string, key: any): boolean;
+    emit(event: 'mouse', data: any): boolean;
+    emit(event: 'resize'): boolean;
+    emit(event: 'warning', message: string): boolean;
+    emit(event: string, ...args: any[]): boolean;
 
     log(): boolean;
     debug(): boolean;

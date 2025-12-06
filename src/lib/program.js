@@ -356,6 +356,12 @@ Program.prototype.listen = function() {
     this.input._blessedInput++;
   }
 
+  // Enable bracketed paste mode if requested
+  if (this.options.bracketedPaste && !this._bracketedPasteEnabled) {
+    this._bracketedPasteEnabled = true;
+    this.decset(2004); // Enable bracketed paste mode: ESC[?2004h
+  }
+
   this.on('newListener', this._newHandler = function fn(type) {
     if (type === 'keypress' || type === 'mouse') {
       self.removeListener('newListener', fn);
@@ -434,7 +440,37 @@ Program.prototype._listenInput = function() {
     });
   });
 
-  keys.emitKeypressEvents(this.input);
+  // Forward paste events from input stream to Program instances
+  this.input.on('paste', this.input._pasteHandler = function(content) {
+    Program.instances.forEach(function(program) {
+      if (program.input !== self.input) return;
+      program.emit('paste', content);
+    });
+  });
+
+  // Forward paste-overflow events from input stream to Program instances
+  this.input.on('paste-overflow', this.input._pasteOverflowHandler = function(info) {
+    Program.instances.forEach(function(program) {
+      if (program.input !== self.input) return;
+      program.emit('paste-overflow', info);
+    });
+  });
+
+  // Forward paste-timeout events from input stream to Program instances
+  this.input.on('paste-timeout', this.input._pasteTimeoutHandler = function(info) {
+    Program.instances.forEach(function(program) {
+      if (program.input !== self.input) return;
+      program.emit('paste-timeout', info);
+    });
+  });
+
+  // Initialize keypress events with paste options
+  keys.emitKeypressEvents(this.input, {
+    bracketedPaste: this.options.bracketedPaste,
+    stripPasteMarkers: this.options.stripPasteMarkers,
+    maxPasteSize: this.options.maxPasteSize,
+    pasteTimeout: this.options.pasteTimeout
+  });
 };
 
 Program.prototype._listenOutput = function() {
@@ -481,6 +517,12 @@ Program.prototype.destroy = function() {
     Program.instances.splice(index, 1);
     Program.total--;
 
+    // Disable bracketed paste mode if it was enabled
+    if (this._bracketedPasteEnabled) {
+      this.resetMode('?2004'); // Disable bracketed paste mode: ESC[?2004l
+      this._bracketedPasteEnabled = false;
+    }
+
     this.flush();
     this._exiting = true;
 
@@ -501,8 +543,14 @@ Program.prototype.destroy = function() {
     if (this.input._blessedInput === 0) {
       this.input.removeListener('keypress', this.input._keypressHandler);
       this.input.removeListener('data', this.input._dataHandler);
+      this.input.removeListener('paste', this.input._pasteHandler);
+      this.input.removeListener('paste-overflow', this.input._pasteOverflowHandler);
+      this.input.removeListener('paste-timeout', this.input._pasteTimeoutHandler);
       delete this.input._keypressHandler;
       delete this.input._dataHandler;
+      delete this.input._pasteHandler;
+      delete this.input._pasteOverflowHandler;
+      delete this.input._pasteTimeoutHandler;
 
       if (this.input.setRawMode) {
         if (this.input.isRaw) {
