@@ -954,6 +954,13 @@ export namespace Widgets {
         children: Node[];
 
         /**
+         * Enable or disable mouse events for this widget at runtime.
+         * When set to false, the widget will not receive mouse events.
+         * Useful for temporarily disabling mouse interaction (e.g., during modal display).
+         */
+        mouse: boolean;
+
+        /**
          * Prepend a node to this node's children.
          */
         prepend(node: Node): void;
